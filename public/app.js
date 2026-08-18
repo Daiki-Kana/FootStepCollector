@@ -114,18 +114,187 @@
   const elBtnRecenter = document.getElementById('btn-recenter');
 
   // =========================================================================
-  // 3. WebSocket Real-time Synchronization
+  // 3. WebSocket Real-time Synchronization & Local Standalone Fallback
   // =========================================================================
   let socket = null;
+  let wsReconnectTimer = null;
+  let wsReconnectDelay = 1000;
+
+  /**
+   * Client-side Standalone Dummy Data Initializer
+   * Guarantees complete standalone functionality even when offline or deployed on static host/Cloudflare Pages
+   */
+  function initLocalDummyDataFallback() {
+    if (state.footsteps.size > 0) return; // Already populated from server
+
+    console.log('[Local] Initializing standalone local dummy point cloud & building dwell clusters...');
+
+    const dummyRestaurants = [
+      { id: 'rest_109', name: 'SHIBUYA 109 Cafe & Dining', lat: 35.65962, lng: 139.69875, count: 5 },
+      { id: 'rest_hikarie', name: 'Shibuya Hikarie Dining 7F', lat: 35.65905, lng: 139.70345, count: 6 },
+      { id: 'rest_miyashita', name: 'MIYASHITA PARK Food Hall', lat: 35.66210, lng: 139.70235, count: 5 },
+      { id: 'rest_qfront', name: 'QFRONT Lounge & Cafe', lat: 35.65955, lng: 139.70055, count: 4 },
+      { id: 'rest_fukuras', name: 'Shibuya Fukuras Dining Floor', lat: 35.65795, lng: 139.69935, count: 4 },
+      { id: 'rest_centergai', name: 'Center-gai Izakaya Complex', lat: 35.66045, lng: 139.69930, count: 6 },
+      { id: 'rest_dogenzaka', name: 'Dogenzaka Dining Bar Block', lat: 35.65875, lng: 139.69740, count: 4 },
+      { id: 'rest_scramble_sq', name: 'Scramble Square Restaurant Level', lat: 35.65840, lng: 139.70220, count: 5 },
+    ];
+    state.restaurants = dummyRestaurants;
+
+    // 1. Pedestrian Walking Routes
+    const routes = [
+      {
+        points: [
+          [139.70062, 35.65908],
+          [139.70050, 35.65930],
+          [139.70040, 35.65948],
+          [139.70028, 35.65970],
+          [139.70015, 35.65985],
+        ],
+        numWalkers: 3,
+        stepSpacing: 6.5,
+      },
+      {
+        points: [
+          [139.70070, 35.65910],
+          [139.70015, 35.65935],
+          [139.69930, 35.65955],
+          [139.69850, 35.65958],
+          [139.69775, 35.65945],
+        ],
+        numWalkers: 2,
+        stepSpacing: 8.5,
+      },
+      {
+        points: [
+          [139.70030, 35.65980],
+          [139.70110, 35.66035],
+          [139.70170, 35.66090],
+          [139.70215, 35.66125],
+        ],
+        numWalkers: 2,
+        stepSpacing: 11.0,
+      },
+      {
+        points: [
+          [139.70120, 35.65880],
+          [139.70220, 35.65885],
+          [139.70325, 35.65892],
+        ],
+        numWalkers: 2,
+        stepSpacing: 11.5,
+      },
+    ];
+
+    let dummyUserIdCounter = 1;
+    const tempSteps = [];
+
+    routes.forEach((route) => {
+      for (let w = 0; w < route.numWalkers; w++) {
+        const uId = `dummy_walker_${dummyUserIdCounter++}`;
+        const lateralOffsetMeters = (w - (route.numWalkers - 1) / 2) * 0.5;
+
+        for (let i = 0; i < route.points.length - 1; i++) {
+          const p1 = turf.point(route.points[i]);
+          const p2 = turf.point(route.points[i + 1]);
+          const dist = turf.distance(p1, p2, { units: 'meters' });
+          const bearing = turf.bearing(p1, p2);
+          const line = turf.lineString([route.points[i], route.points[i + 1]]);
+          const count = Math.max(1, Math.floor(dist / route.stepSpacing));
+
+          for (let s = 0; s < count; s++) {
+            const alongPt = turf.along(line, s * route.stepSpacing, { units: 'meters' });
+            const jitterOffset = (Math.random() - 0.5) * 0.3 + lateralOffsetMeters;
+            const perpBearing = (bearing + 90) % 360;
+            const offsetPt = turf.destination(
+              alongPt,
+              Math.abs(jitterOffset),
+              jitterOffset >= 0 ? perpBearing : (perpBearing + 180) % 360,
+              { units: 'meters' }
+            );
+            const [lng, lat] = offsetPt.geometry.coordinates;
+
+            tempSteps.push({
+              id: `local_step_${tempSteps.length + 1}`,
+              userId: uId,
+              lat,
+              lng,
+              heading: (bearing + 360) % 360,
+              timestamp: Date.now() - Math.floor(Math.random() * 3600000),
+              density: 1,
+              isRightFoot: s % 2 === 0 ? 1 : 0,
+              isDwell: false,
+            });
+          }
+        }
+      }
+    });
+
+    // 2. Building Dwell Concentrated Clusters (isDwell: true)
+    dummyRestaurants.forEach((rest, idx) => {
+      const count = rest.count || 4;
+      for (let k = 0; k < count; k++) {
+        const angle = (k / count) * 2 * Math.PI + (Math.random() - 0.5) * 0.5;
+        const radiusMeters = 1.0 + Math.random() * 3.5;
+        const offsetLat = (radiusMeters * Math.cos(angle)) / 111320;
+        const offsetLng = (radiusMeters * Math.sin(angle)) / (111320 * Math.cos((rest.lat * Math.PI) / 180));
+
+        tempSteps.push({
+          id: `local_dwell_${rest.id}_${k}`,
+          userId: `local_dwell_user_${idx + 1}_${k}`,
+          lat: rest.lat + offsetLat,
+          lng: rest.lng + offsetLng,
+          heading: Math.floor(Math.random() * 360),
+          timestamp: Date.now() - (120000 + k * 20000 + Math.floor(Math.random() * 60000)),
+          density: 1,
+          isRightFoot: 1,
+          isDwell: true,
+          restaurantId: rest.id,
+          dwellDurationSec: 120 + Math.floor(Math.random() * 300),
+        });
+      }
+    });
+
+    // 3. Compute accurate densities
+    for (let i = 0; i < tempSteps.length; i++) {
+      const s1 = tempSteps[i];
+      let d = 0;
+      for (let j = 0; j < tempSteps.length; j++) {
+        const s2 = tempSteps[j];
+        const dLat = (s1.lat - s2.lat) * 111320;
+        const dLng = (s1.lng - s2.lng) * 111320 * Math.cos((s1.lat * Math.PI) / 180);
+        if (dLat * dLat + dLng * dLng <= 2.5 * 2.5) {
+          d++;
+        }
+      }
+      s1.density = Math.min(15, d);
+      state.footsteps.set(s1.id, s1);
+    }
+
+    console.log(`[Local] Standalone initialized with ${state.footsteps.size} points.`);
+    scheduleMapUpdate();
+  }
 
   function initWebSocket() {
+    if (!window.location.host) {
+      initLocalDummyDataFallback();
+      return;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
 
-    socket = new WebSocket(wsUrl);
+    try {
+      socket = new WebSocket(wsUrl);
+    } catch (e) {
+      console.warn('[WS] WebSocket instantiation failed, falling back to local standalone mode:', e);
+      initLocalDummyDataFallback();
+      return;
+    }
 
     socket.onopen = () => {
       console.log('[WS] Connected to FootStep Server');
+      wsReconnectDelay = 1000;
     };
 
     socket.onmessage = (event) => {
@@ -135,10 +304,14 @@
         switch (data.type) {
           case 'init':
             state.userId = data.userId;
-            if (Array.isArray(data.footsteps)) {
+            if (Array.isArray(data.footsteps) && data.footsteps.length > 0) {
+              state.footsteps.clear();
+              enuCache.clear();
               data.footsteps.forEach((step) => state.footsteps.set(step.id, step));
+            } else {
+              initLocalDummyDataFallback();
             }
-            if (Array.isArray(data.restaurants)) {
+            if (Array.isArray(data.restaurants) && data.restaurants.length > 0) {
               state.restaurants = data.restaurants;
             }
             scheduleMapUpdate();
@@ -169,11 +342,24 @@
     };
 
     socket.onclose = () => {
-      setTimeout(initWebSocket, 2000);
+      // If server disconnected, ensure fallback data exists
+      if (state.footsteps.size === 0) {
+        initLocalDummyDataFallback();
+      }
+      if (!wsReconnectTimer) {
+        wsReconnectTimer = setTimeout(() => {
+          wsReconnectTimer = null;
+          wsReconnectDelay = Math.min(wsReconnectDelay * 1.5, 10000);
+          initWebSocket();
+        }, wsReconnectDelay);
+      }
     };
 
     socket.onerror = (err) => {
-      console.error('[WS] Socket error:', err);
+      console.warn('[WS] Socket warning:', err);
+      if (state.footsteps.size === 0) {
+        initLocalDummyDataFallback();
+      }
     };
   }
 
@@ -576,10 +762,12 @@
         },
       };
 
-      normalFeatures.push(feature);
-
       if (step.isDwell) {
+        // Dwell green spots strictly belong to the dining dwell layer
         dwellFeatures.push(feature);
+      } else {
+        // Walking thermography dots strictly belong to the normal thermography layer
+        normalFeatures.push(feature);
       }
     });
 

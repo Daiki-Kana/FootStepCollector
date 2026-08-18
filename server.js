@@ -115,62 +115,63 @@ function generateShibuyaDummyData() {
   footsteps.length = 0;
   restaurantPois.length = 0;
 
-  // 1. Define Dummy Restaurant POIs in Shibuya alleys / shopping areas (7 spots)
+  // 1. Define Dummy Restaurant & Dining Building POIs in Shibuya
   const dummyRestaurants = [
-    { id: 'rest_1', name: 'Shibuya Alley Diner', lat: 35.65985, lng: 139.70010 }, // Near Center-gai entrance
-    { id: 'rest_2', name: 'Miyashita Park Terrace Cafe', lat: 35.66120, lng: 139.70210 }, // Miyashita Park
-    { id: 'rest_3', name: 'Dogenzaka Ramen Bar', lat: 35.65940, lng: 139.69780 }, // Dogenzaka alley
-    { id: 'rest_4', name: 'Sakuragaoka Coffee House', lat: 35.65750, lng: 139.70120 }, // Sakuragaoka
-    { id: 'rest_5', name: 'Hikarie Sky Bistro', lat: 35.65890, lng: 139.70320 }, // Hikarie side
-    { id: 'rest_6', name: 'Inokashira Izakaya', lat: 35.65820, lng: 139.69910 }, // Near Inokashira line
-    { id: 'rest_7', name: 'Udagawacho Craft Burger', lat: 35.66180, lng: 139.69850 }, // Udagawa-cho
+    { id: 'rest_109', name: 'SHIBUYA 109 Cafe & Dining', lat: 35.65962, lng: 139.69875, count: 5 }, // 109 Building
+    { id: 'rest_hikarie', name: 'Shibuya Hikarie Dining 7F', lat: 35.65905, lng: 139.70345, count: 6 }, // Hikarie Building
+    { id: 'rest_miyashita', name: 'MIYASHITA PARK Food Hall', lat: 35.66210, lng: 139.70235, count: 5 }, // Miyashita Park Complex
+    { id: 'rest_qfront', name: 'QFRONT Lounge & Cafe', lat: 35.65955, lng: 139.70055, count: 4 }, // QFRONT Building
+    { id: 'rest_fukuras', name: 'Shibuya Fukuras Dining Floor', lat: 35.65795, lng: 139.69935, count: 4 }, // Fukuras Building
+    { id: 'rest_centergai', name: 'Center-gai Izakaya Complex', lat: 35.66045, lng: 139.69930, count: 6 }, // Center-gai Dining Tower
+    { id: 'rest_dogenzaka', name: 'Dogenzaka Dining Bar Block', lat: 35.65875, lng: 139.69740, count: 4 }, // Dogenzaka Building
+    { id: 'rest_scramble_sq', name: 'Scramble Square Restaurant Level', lat: 35.65840, lng: 139.70220, count: 5 }, // Scramble Square Building
   ];
 
   restaurantPois.push(...dummyRestaurants);
 
-  // 2. Define Key Shibuya Pedestrian Routes designed for ~170-180 total points
+  // 2. Define Key Shibuya Pedestrian Routes designed for ~150-170 total moving points
   const routes = [
-    // Route A: Scramble Crossing & Hachiko Plaza (High Density Hotspot - ~65 dots)
+    // Route A: Scramble Crossing & Hachiko Plaza (High Density Hotspot)
     {
       points: [
         { lat: 35.65908, lng: 139.70062 }, // Hachiko Plaza
         { lat: 35.65930, lng: 139.70050 }, // Crossing approach
         { lat: 35.65948, lng: 139.70040 }, // Scramble center
-        { lat: 35.65970, lng: 139.70028 }, // TSUTAYA/QFRONT approach
-        { lat: 35.65985, lng: 139.70015 }, // Center-gai mouth
+        { lat: 35.65970, lng: 139.70028 }, // Crossing north
+        { lat: 35.65985, lng: 139.70015 }, // Center-gai entrance street
       ],
       numWalkers: 3,
       stepSpacing: 6.5,
     },
-    // Route B: Station to 109 & Dogenzaka (Medium-High Density - ~45 dots)
+    // Route B: Station to Dogenzaka Road (Medium-High Density)
     {
       points: [
         { lat: 35.65910, lng: 139.70070 }, // Station Hachiko Gate
         { lat: 35.65935, lng: 139.70015 }, // West crosswalk
-        { lat: 35.65955, lng: 139.69930 }, // Towards SHIBUYA 109
-        { lat: 35.65958, lng: 139.69850 }, // Dogenzaka Fork
-        { lat: 35.65945, lng: 139.69775 }, // Dogenzaka alley near Restaurant 3
+        { lat: 35.65955, lng: 139.69930 }, // In front of 109
+        { lat: 35.65958, lng: 139.69850 }, // Dogenzaka Street Fork
+        { lat: 35.65945, lng: 139.69775 }, // Dogenzaka Street
       ],
       numWalkers: 2,
       stepSpacing: 8.5,
     },
-    // Route C: Scramble towards Miyashita Park (Medium-Low Density - ~35 dots)
+    // Route C: Scramble towards Miyashita Park Walkway (Medium Density)
     {
       points: [
-        { lat: 35.65980, lng: 139.70030 }, // QFRONT
-        { lat: 35.66035, lng: 139.70110 }, // Seibu / Jinnan junction
-        { lat: 35.66090, lng: 139.70170 }, // Miyashita Park South
-        { lat: 35.66125, lng: 139.70215 }, // Miyashita Park Terrace Cafe near Restaurant 2
+        { lat: 35.65980, lng: 139.70030 }, // TSUTAYA Corner
+        { lat: 35.66035, lng: 139.70110 }, // Seibu / Jinnan junction street
+        { lat: 35.66090, lng: 139.70170 }, // Miyashita Park South street
+        { lat: 35.66125, lng: 139.70215 }, // Miyashita Park approach
       ],
       numWalkers: 2,
       stepSpacing: 11.0,
     },
-    // Route D: Station to Shibuya Hikarie (Medium Density - ~25 dots)
+    // Route D: Station to Shibuya Hikarie Deck (Medium Density)
     {
       points: [
         { lat: 35.65880, lng: 139.70120 }, // East Exit Walkway
         { lat: 35.65885, lng: 139.70220 }, // Pedestrian Deck
-        { lat: 35.65892, lng: 139.70325 }, // Hikarie 2F Plaza near Restaurant 5
+        { lat: 35.65892, lng: 139.70325 }, // Hikarie 2F Deck entrance
       ],
       numWalkers: 2,
       stepSpacing: 11.5,
@@ -223,24 +224,28 @@ function generateShibuyaDummyData() {
     }
   });
 
-  // 3. Add 2-minute Dwell Footprints at 4 Restaurant spots (~8 dots)
-  const dwellRestaurants = [dummyRestaurants[0], dummyRestaurants[1], dummyRestaurants[2], dummyRestaurants[4]];
-  dwellRestaurants.forEach((rest, idx) => {
-    for (let k = 0; k < 2; k++) {
-      const offsetLat = (Math.random() - 0.5) * 0.00003;
-      const offsetLng = (Math.random() - 0.5) * 0.00003;
+  // 3. Add 2-minute Dwell Footprints inside Building Clusters (People concentrated inside buildings)
+  dummyRestaurants.forEach((rest, idx) => {
+    const count = rest.count || 4;
+    for (let k = 0; k < count; k++) {
+      // Natural indoor cluster distribution within 3-5m radius of building center
+      const angle = (k / count) * 2 * Math.PI + (Math.random() - 0.5) * 0.5;
+      const radiusMeters = 1.0 + Math.random() * 3.5; // 1m to 4.5m indoor spread
+      const offsetLat = (radiusMeters * Math.cos(angle)) / 111320;
+      const offsetLng = (radiusMeters * Math.sin(angle)) / (111320 * Math.cos((rest.lat * Math.PI) / 180));
+
       footsteps.push({
         id: `dwell_step_${rest.id}_${k}`,
-        userId: `dwell_user_${idx + 1}`,
+        userId: `dwell_user_${idx + 1}_${k}`,
         lat: rest.lat + offsetLat,
         lng: rest.lng + offsetLng,
         heading: Math.floor(Math.random() * 360),
-        timestamp: Date.now() - (120000 + k * 10000),
+        timestamp: Date.now() - (120000 + k * 20000 + Math.floor(Math.random() * 60000)),
         density: 1,
         isRightFoot: 1,
         isDwell: true,
         restaurantId: rest.id,
-        dwellDurationSec: 120 + Math.floor(Math.random() * 180), // 2 to 5 minutes
+        dwellDurationSec: 120 + Math.floor(Math.random() * 300), // 2 to 7 minutes dwell time
       });
     }
   });
@@ -248,7 +253,7 @@ function generateShibuyaDummyData() {
   // 4. Calculate accurate densities for all generated dots
   recalculateAllDensities();
 
-  console.log(`[Init] Generated ${footsteps.length} total footsteps across Shibuya (including dwell records).`);
+  console.log(`[Init] Generated ${footsteps.length} total footsteps across Shibuya (${dummyRestaurants.reduce((a, b) => a + (b.count || 4), 0)} building dwell spots).`);
 }
 
 /**
